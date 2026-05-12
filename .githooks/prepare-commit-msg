@@ -1,0 +1,16 @@
+#!/bin/sh
+# Strip attribution trailers from commit messages (project policy).
+# Enable per clone: git config core.hooksPath .githooks
+# Or: powershell -File scripts/enable-git-hooks.ps1
+
+msg_file="$1"
+[ -z "$msg_file" ] || [ ! -f "$msg_file" ] && exit 0
+
+tmp="${msg_file}.stripattr.$$"
+grep -v '^Co-authored-by:' "$msg_file" \
+	| grep -vi '^Signed-off-by:' \
+	| grep -vi 'cursoragent' \
+	| grep -vi '@cursor\.com' \
+	| grep -vi '^Made with Cursor' \
+	> "$tmp" && mv "$tmp" "$msg_file" || rm -f "$tmp"
+exit 0

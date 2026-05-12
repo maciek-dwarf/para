@@ -1,0 +1,23 @@
+# Unreal Engine
+/Binaries
+/DerivedDataCache
+/Intermediate
+/Saved
+/.vs
+*.VC.db
+*.VC.opendb
+*.opensdf
+*.sdf
+*.sln.docstates
+*.user
+*.userosscache
+*.suo
+*.xcodeproj
+*.xcworkspace
+
+# Build
+Build/
+
+# OS
+.DS_Store
+Thumbs.db
