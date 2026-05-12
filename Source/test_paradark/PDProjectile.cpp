@@ -3,6 +3,7 @@
 
 #include "PDProjectile.h"
 
+#include "PDDamageTypes.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -80,16 +81,39 @@ void APDProjectile::OnProjectileHit(
 
 		switch (AmmoType)
 		{
-		case EPDProjectileAmmoType::Regular: Data.Magnitude = RegularDamage; break;
-		case EPDProjectileAmmoType::Fire: Data.Magnitude = FireImpactDamage; break;
-		case EPDProjectileAmmoType::Water: Data.Magnitude = 0.0f; break;
-		case EPDProjectileAmmoType::Healing: Data.Magnitude = HealingAmount; break;
-		default: Data.Magnitude = 0.0f; break;
+		case EPDProjectileAmmoType::Regular:
+			Data.Magnitude = RegularDamage;
+			Data.IncomingDamage.DamageType = EPDDamageType::Physical;
+			Data.IncomingDamage.BaseAmount = RegularDamage;
+			break;
+		case EPDProjectileAmmoType::Fire:
+			Data.Magnitude = FireImpactDamage;
+			Data.IncomingDamage.DamageType = EPDDamageType::Fire;
+			Data.IncomingDamage.BaseAmount = FireImpactDamage;
+			break;
+		case EPDProjectileAmmoType::Water:
+			Data.Magnitude = 0.0f;
+			Data.IncomingDamage.DamageType = EPDDamageType::Water;
+			Data.IncomingDamage.BaseAmount = 0.0f;
+			break;
+		case EPDProjectileAmmoType::Healing:
+			Data.Magnitude = HealingAmount;
+			Data.IncomingDamage.DamageType = EPDDamageType::Heal;
+			Data.IncomingDamage.BaseAmount = HealingAmount;
+			break;
+		default:
+			Data.Magnitude = 0.0f;
+			Data.IncomingDamage.DamageType = EPDDamageType::Physical;
+			Data.IncomingDamage.BaseAmount = 0.0f;
+			break;
 		}
 
 		Data.Hit = Hit;
 
-		UE_LOG(LogTemp, Log, TEXT("[PDProjectile] Forwarding impact to interface. Target=%s"), *GetNameSafe(OtherActor));
+		UE_LOG(LogTemp, Log, TEXT("[PDProjectile] Forwarding impact to interface. Target=%s type=%d base=%.2f"),
+			*GetNameSafe(OtherActor),
+			static_cast<int32>(Data.IncomingDamage.DamageType),
+			Data.IncomingDamage.BaseAmount);
 		IPDProjectileImpactInterface::Execute_HandleProjectileImpact(OtherActor, Data);
 		Destroy();
 		return;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "PDDamageTypes.h"
 #include "UObject/Interface.h"
 #include "PDProjectileImpactInterface.generated.h"
 
@@ -19,7 +20,11 @@ struct FPDProjectileImpactData
 	uint8 AmmoType = 0; // Stored as byte to keep this interface independent from projectile header
 
 	UPROPERTY(BlueprintReadOnly, Category = "Projectile")
-	float Magnitude = 0.0f; // Damage or healing amount depending on ammo
+	float Magnitude = 0.0f; // Kept for debugging / legacy reads; prefer IncomingDamage
+
+	/** Typed payload for ApplyIncomingDamage (filled by projectiles / weapons). */
+	UPROPERTY(BlueprintReadOnly, Category = "Projectile")
+	FPDIncomingDamage IncomingDamage;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Projectile")
 	FHitResult Hit;
@@ -40,4 +45,3 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Projectile")
 	void HandleProjectileImpact(const FPDProjectileImpactData& Data);
 };
-

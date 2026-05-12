@@ -54,6 +54,55 @@ void APDCombatCharacter::InitAbilityActorInfoIfNeeded()
 	}
 }
 
+float APDCombatCharacter::GetResistanceForDamageType(const EPDDamageType Type) const
+{
+	switch (Type)
+	{
+	case EPDDamageType::Physical: return ResistancePhysical;
+	case EPDDamageType::Fire: return ResistanceFire;
+	case EPDDamageType::Water: return ResistanceWater;
+	case EPDDamageType::Heal: return 0.f;
+	default: return 0.f;
+	}
+}
+
+void APDCombatCharacter::ApplyIncomingDamage(const FPDIncomingDamage& Incoming)
+{
+	if (!AbilitySystemComponent)
+	{
+		return;
+	}
+
+	if (Incoming.BaseAmount <= 0.f)
+	{
+		return;
+	}
+
+	if (Incoming.DamageType == EPDDamageType::Heal)
+	{
+		ApplyInstantHealthDelta(Incoming.BaseAmount);
+		UE_LOG(LogTemp, Log, TEXT("[PDCombat] Heal (bypass resist) amount=%.2f (%s)"), Incoming.BaseAmount, *GetName());
+		return;
+	}
+
+	const float Resist = FMath::Clamp(GetResistanceForDamageType(Incoming.DamageType), 0.f, 1.f);
+	const float FinalDamage = Incoming.BaseAmount * (1.f - Resist);
+
+	UE_LOG(LogTemp, Log, TEXT("[PDCombat] ApplyIncomingDamage type=%d base=%.2f resist=%.2f final=%.2f (%s)"),
+		static_cast<int32>(Incoming.DamageType),
+		Incoming.BaseAmount,
+		Resist,
+		FinalDamage,
+		*GetName());
+
+	if (FinalDamage <= KINDA_SMALL_NUMBER)
+	{
+		return;
+	}
+
+	ApplyInstantHealthDelta(-FinalDamage);
+}
+
 void APDCombatCharacter::ApplyInstantHealthDelta(const float Delta)
 {
 	if (!AbilitySystemComponent || !InstantHealthDeltaEffect)
@@ -77,7 +126,7 @@ void APDCombatCharacter::ApplyInstantHealthDelta(const float Delta)
 	UE_LOG(LogTemp, Log, TEXT("[PDCombat] Instant health delta %.2f applied (%s)"), Delta, *GetName());
 }
 
-FActiveGameplayEffectHandle APDCombatCharacter::TryApplyBurn(const float FireImpactDamage)
+FActiveGameplayEffectHandle APDCombatCharacter::TryApplyBurn()
 {
 	if (!AbilitySystemComponent || !BurnEffect)
 	{
@@ -113,12 +162,7 @@ FActiveGameplayEffectHandle APDCombatCharacter::TryApplyBurn(const float FireImp
 	const FActiveGameplayEffectHandle Handle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
 	ActiveBurnHandle = Handle;
 
-	if (FireImpactDamage > 0.f)
-	{
-		ApplyInstantHealthDelta(-FireImpactDamage);
-	}
-
-	UE_LOG(LogTemp, Log, TEXT("[PDCombat] Burn applied: duration=%.2f tickDmg=%.2f (%s)"),
+	UE_LOG(LogTemp, Log, TEXT("[PDCombat] Burn applied: duration=%.2f tickBase=%.2f (%s)"),
 		BurnDurationSeconds,
 		BurnDamagePerTick,
 		*GetName());
@@ -169,20 +213,25 @@ void APDCombatCharacter::HandleProjectileImpact_Implementation(const FPDProjecti
 	switch (static_cast<int32>(Data.AmmoType))
 	{
 	case 0:
-		ApplyInstantHealthDelta(-Data.Magnitude);
-		UE_LOG(LogTemp, Log, TEXT("[PDCombat] Regular damage=%.2f (%s)"), Data.Magnitude, *GetName());
+		ApplyIncomingDamage(Data.IncomingDamage);
+		UE_LOG(LogTemp, Log, TEXT("[PDCombat] Regular projectile resolved (%s)"), *GetName());
 		break;
 	case 1:
-		TryApplyBurn(Data.Magnitude);
-		UE_LOG(LogTemp, Log, TEXT("[PDCombat] Fire impact=%.2f (%s)"), Data.Magnitude, *GetName());
+		ApplyIncomingDamage(Data.IncomingDamage);
+		TryApplyBurn();
+		UE_LOG(LogTemp, Log, TEXT("[PDCombat] Fire projectile resolved (%s)"), *GetName());
 		break;
 	case 2:
+		if (Data.IncomingDamage.BaseAmount > 0.f)
+		{
+			ApplyIncomingDamage(Data.IncomingDamage);
+		}
 		ExtinguishBurnAndApplyWet();
-		UE_LOG(LogTemp, Log, TEXT("[PDCombat] Water hit (%s)"), *GetName());
+		UE_LOG(LogTemp, Log, TEXT("[PDCombat] Water projectile resolved (%s)"), *GetName());
 		break;
 	case 3:
-		ApplyInstantHealthDelta(Data.Magnitude);
-		UE_LOG(LogTemp, Log, TEXT("[PDCombat] Heal=%.2f (%s)"), Data.Magnitude, *GetName());
+		ApplyIncomingDamage(Data.IncomingDamage);
+		UE_LOG(LogTemp, Log, TEXT("[PDCombat] Healing projectile resolved (%s)"), *GetName());
 		break;
 	default:
 		UE_LOG(LogTemp, Warning, TEXT("[PDCombat] Unknown ammo=%d (%s)"), static_cast<int32>(Data.AmmoType), *GetName());
