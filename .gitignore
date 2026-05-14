@@ -21,3 +21,6 @@ Build/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local-only helper scripts
+scripts/enable-git-hooks.ps1
