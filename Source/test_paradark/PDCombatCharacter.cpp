@@ -8,6 +8,22 @@
 #include "PDGameplayTags.h"
 #include "GameplayEffect.h"
 
+namespace PDCombatConstants
+{
+	// We don't use ability levels in this project; all GE specs are built at level 1.
+	static constexpr float DefaultEffectLevel = 1.f;
+
+	// We refresh-by-remove on burn re-application; 1 stack == the single active burn we just placed.
+	static constexpr int32 BurnStacksToRemove = 1;
+
+	// Resistance is a multiplier on incoming damage; valid range is [0, 1] (0 = no resist, 1 = immune).
+	static constexpr float MinResistance = 0.f;
+	static constexpr float MaxResistance = 1.f;
+
+	// Heal channel bypasses resistances entirely.
+	static constexpr float NoResistance   = 0.f;
+}
+
 UAbilitySystemComponent* APDCombatCharacter::GetAbilitySystemComponent() const
 {
 	return AbilitySystemComponent;
@@ -82,8 +98,8 @@ float APDCombatCharacter::GetResistanceForDamageType(const EPDDamageType Type) c
 	case EPDDamageType::Physical: return ResistancePhysical;
 	case EPDDamageType::Fire: return ResistanceFire;
 	case EPDDamageType::Water: return ResistanceWater;
-	case EPDDamageType::Heal: return 0.f;
-	default: return 0.f;
+	case EPDDamageType::Heal: return PDCombatConstants::NoResistance;
+	default: return PDCombatConstants::NoResistance;
 	}
 }
 
@@ -106,8 +122,11 @@ void APDCombatCharacter::ApplyIncomingDamage(const FPDIncomingDamage& Incoming)
 		return;
 	}
 
-	const float Resist = FMath::Clamp(GetResistanceForDamageType(Incoming.DamageType), 0.f, 1.f);
-	const float FinalDamage = Incoming.BaseAmount * (1.f - Resist);
+	const float Resist = FMath::Clamp(
+		GetResistanceForDamageType(Incoming.DamageType),
+		PDCombatConstants::MinResistance,
+		PDCombatConstants::MaxResistance);
+	const float FinalDamage = Incoming.BaseAmount * (PDCombatConstants::MaxResistance - Resist);
 
 	UE_LOG(LogTemp, Log, TEXT("[PDCombat] ApplyIncomingDamage type=%d base=%.2f resist=%.2f final=%.2f (%s)"),
 		static_cast<int32>(Incoming.DamageType),
@@ -134,7 +153,8 @@ void APDCombatCharacter::ApplyInstantHealthDelta(const float Delta)
 	FGameplayEffectContextHandle Ctx = AbilitySystemComponent->MakeEffectContext();
 	Ctx.AddSourceObject(this);
 
-	const FGameplayEffectSpecHandle Spec = AbilitySystemComponent->MakeOutgoingSpec(InstantHealthDeltaEffect, 1.f, Ctx);
+	const FGameplayEffectSpecHandle Spec = AbilitySystemComponent->MakeOutgoingSpec(
+		InstantHealthDeltaEffect, PDCombatConstants::DefaultEffectLevel, Ctx);
 	if (!Spec.IsValid() || !Spec.Data.IsValid())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[PDCombat] Failed to build instant health delta spec (%s)"), *GetName());
@@ -162,7 +182,7 @@ FActiveGameplayEffectHandle APDCombatCharacter::TryApplyBurn()
 
 	if (ActiveBurnHandle.IsValid())
 	{
-		AbilitySystemComponent->RemoveActiveGameplayEffect(ActiveBurnHandle, 1);
+		AbilitySystemComponent->RemoveActiveGameplayEffect(ActiveBurnHandle, PDCombatConstants::BurnStacksToRemove);
 		ActiveBurnHandle.Invalidate();
 		UE_LOG(LogTemp, Log, TEXT("[PDCombat] Burn refreshed: removed previous effect (%s)"), *GetName());
 	}
@@ -170,7 +190,8 @@ FActiveGameplayEffectHandle APDCombatCharacter::TryApplyBurn()
 	FGameplayEffectContextHandle Ctx = AbilitySystemComponent->MakeEffectContext();
 	Ctx.AddSourceObject(this);
 
-	const FGameplayEffectSpecHandle Spec = AbilitySystemComponent->MakeOutgoingSpec(BurnEffect, 1.f, Ctx);
+	const FGameplayEffectSpecHandle Spec = AbilitySystemComponent->MakeOutgoingSpec(
+		BurnEffect, PDCombatConstants::DefaultEffectLevel, Ctx);
 	if (!Spec.IsValid() || !Spec.Data.IsValid())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[PDCombat] Failed to build burn spec (%s)"), *GetName());
@@ -200,7 +221,7 @@ void APDCombatCharacter::ExtinguishBurnAndApplyWet()
 
 	if (ActiveBurnHandle.IsValid())
 	{
-		AbilitySystemComponent->RemoveActiveGameplayEffect(ActiveBurnHandle, 1);
+		AbilitySystemComponent->RemoveActiveGameplayEffect(ActiveBurnHandle, PDCombatConstants::BurnStacksToRemove);
 		ActiveBurnHandle.Invalidate();
 	}
 
@@ -214,7 +235,7 @@ void APDCombatCharacter::ExtinguishBurnAndApplyWet()
 
 	const FGameplayEffectSpecHandle WetSpec = AbilitySystemComponent->MakeOutgoingSpec(
 		WetEffect,
-		1.f,
+		PDCombatConstants::DefaultEffectLevel,
 		AbilitySystemComponent->MakeEffectContext());
 
 	if (!WetSpec.IsValid() || !WetSpec.Data.IsValid())

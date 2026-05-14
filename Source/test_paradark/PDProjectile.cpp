@@ -10,13 +10,25 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/DamageType.h"
 
+namespace PDProjectileDefaults
+{
+	// Component setup defaults (constructor-time; not designer-facing).
+	// If you need designers to tune these per-variant, promote to UPROPERTY(EditDefaultsOnly).
+	static constexpr float CollisionSphereRadius = 10.0f;
+	static constexpr float InitialSpeed          = 3000.0f;
+	static constexpr float MaxSpeed              = 3000.0f;
+	static constexpr float ProjectileGravity     = 0.0f;
+	// Used as the "no damage" magnitude on impact paths where the ammo carries no direct hit damage.
+	static constexpr float NoImpactDamage        = 0.0f;
+}
+
 // Sets default values
 APDProjectile::APDProjectile()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
 	CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
-	CollisionComponent->InitSphereRadius(10.0f);
+	CollisionComponent->InitSphereRadius(PDProjectileDefaults::CollisionSphereRadius);
 	CollisionComponent->SetCollisionProfileName(TEXT("Projectile"));
 	CollisionComponent->SetNotifyRigidBodyCollision(true);
 	CollisionComponent->SetGenerateOverlapEvents(false);
@@ -27,11 +39,11 @@ APDProjectile::APDProjectile()
 	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	MovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Movement"));
-	MovementComponent->InitialSpeed = 3000.0f;
-	MovementComponent->MaxSpeed = 3000.0f;
+	MovementComponent->InitialSpeed = PDProjectileDefaults::InitialSpeed;
+	MovementComponent->MaxSpeed = PDProjectileDefaults::MaxSpeed;
 	MovementComponent->bRotationFollowsVelocity = true;
 	MovementComponent->bShouldBounce = false;
-	MovementComponent->ProjectileGravityScale = 0.0f;
+	MovementComponent->ProjectileGravityScale = PDProjectileDefaults::ProjectileGravity;
 
 	CollisionComponent->OnComponentHit.AddDynamic(this, &APDProjectile::OnProjectileHit);
 
@@ -92,9 +104,9 @@ void APDProjectile::OnProjectileHit(
 			Data.IncomingDamage.BaseAmount = FireImpactDamage;
 			break;
 		case EPDProjectileAmmoType::Water:
-			Data.Magnitude = 0.0f;
+			Data.Magnitude = PDProjectileDefaults::NoImpactDamage;
 			Data.IncomingDamage.DamageType = EPDDamageType::Water;
-			Data.IncomingDamage.BaseAmount = 0.0f;
+			Data.IncomingDamage.BaseAmount = PDProjectileDefaults::NoImpactDamage;
 			break;
 		case EPDProjectileAmmoType::Healing:
 			Data.Magnitude = HealingAmount;
@@ -102,9 +114,9 @@ void APDProjectile::OnProjectileHit(
 			Data.IncomingDamage.BaseAmount = HealingAmount;
 			break;
 		default:
-			Data.Magnitude = 0.0f;
+			Data.Magnitude = PDProjectileDefaults::NoImpactDamage;
 			Data.IncomingDamage.DamageType = EPDDamageType::Physical;
-			Data.IncomingDamage.BaseAmount = 0.0f;
+			Data.IncomingDamage.BaseAmount = PDProjectileDefaults::NoImpactDamage;
 			break;
 		}
 
@@ -145,7 +157,7 @@ void APDProjectile::OnProjectileHit(
 	{
 		TSubclassOf<UDamageType> DT = WaterDamageType;
 		if (!DT) { DT = UDamageType::StaticClass(); }
-		UGameplayStatics::ApplyPointDamage(OtherActor, 0.0f, GetVelocity().GetSafeNormal(), Hit, InstigatorController, this, DT);
+		UGameplayStatics::ApplyPointDamage(OtherActor, PDProjectileDefaults::NoImpactDamage, GetVelocity().GetSafeNormal(), Hit, InstigatorController, this, DT);
 		UE_LOG(LogTemp, Log, TEXT("[PDProjectile] Water hit %s (fallback). Extinguish requires interface/component on target."), *GetNameSafe(OtherActor));
 		break;
 	}

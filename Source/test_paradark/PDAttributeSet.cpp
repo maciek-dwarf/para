@@ -5,10 +5,19 @@
 #include "GameplayEffectTypes.h"
 #include "Net/UnrealNetwork.h"
 
+namespace PDAttributeDefaults
+{
+	// Baseline values for a fresh actor. Typical GAS projects override these via an
+	// "init attributes" Gameplay Effect per archetype (player vs enemy etc.).
+	static constexpr float StartingHealth    = 100.f;
+	static constexpr float StartingMaxHealth = 100.f;
+	static constexpr float MinHealth         = 0.f;
+}
+
 UPDAttributeSet::UPDAttributeSet()
 {
-	InitHealth(100.f);
-	InitMaxHealth(100.f);
+	InitHealth(PDAttributeDefaults::StartingHealth);
+	InitMaxHealth(PDAttributeDefaults::StartingMaxHealth);
 }
 
 void UPDAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -35,7 +44,7 @@ void UPDAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 
 	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
 	{
-		const float Clamped = FMath::Clamp(GetHealth(), 0.f, GetMaxHealth());
+		const float Clamped = FMath::Clamp(GetHealth(), PDAttributeDefaults::MinHealth, GetMaxHealth());
 		SetHealth(Clamped);
 	}
 }
