@@ -15,8 +15,8 @@ void UPDAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME_CONDITION_NOTIFY(UPDAttributeSet, Health, COND_None, REPNOTIFY_Always, true);
-	DOREPLIFETIME_CONDITION_NOTIFY(UPDAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always, true);
+	DOREPLIFETIME_CONDITION_NOTIFY(UPDAttributeSet, Health, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UPDAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
 }
 
 void UPDAttributeSet::OnRep_Health(const FGameplayAttributeData& OldValue)

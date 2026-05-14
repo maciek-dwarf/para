@@ -8,6 +8,27 @@
 #include "PDGameplayTags.h"
 #include "GameplayEffect.h"
 
+UAbilitySystemComponent* APDCombatCharacter::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
+}
+
+float APDCombatCharacter::GetHealthCurrent() const
+{
+	return AttributeSet ? AttributeSet->GetHealth() : 0.f;
+}
+
+float APDCombatCharacter::GetHealthMax() const
+{
+	return AttributeSet ? AttributeSet->GetMaxHealth() : 0.f;
+}
+
+float APDCombatCharacter::GetHealthNormalized() const
+{
+	const float Max = GetHealthMax();
+	return Max > 0.f ? GetHealthCurrent() / Max : 0.f;
+}
+
 APDCombatCharacter::APDCombatCharacter()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -120,7 +141,7 @@ void APDCombatCharacter::ApplyInstantHealthDelta(const float Delta)
 		return;
 	}
 
-	Spec.Data->SetSetByCallerMagnitude(TAG_PD_Data_HealthDelta, Delta, false);
+	Spec.Data->SetSetByCallerMagnitude(TAG_PD_Data_HealthDelta, Delta);
 	AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
 
 	UE_LOG(LogTemp, Log, TEXT("[PDCombat] Instant health delta %.2f applied (%s)"), Delta, *GetName());
@@ -156,8 +177,8 @@ FActiveGameplayEffectHandle APDCombatCharacter::TryApplyBurn()
 		return FActiveGameplayEffectHandle();
 	}
 
-	Spec.Data->SetSetByCallerMagnitude(TAG_PD_Data_BurnDuration, BurnDurationSeconds, false);
-	Spec.Data->SetSetByCallerMagnitude(TAG_PD_Data_PeriodicFireDamage, BurnDamagePerTick, false);
+	Spec.Data->SetSetByCallerMagnitude(TAG_PD_Data_BurnDuration, BurnDurationSeconds);
+	Spec.Data->SetSetByCallerMagnitude(TAG_PD_Data_PeriodicFireDamage, BurnDamagePerTick);
 
 	const FActiveGameplayEffectHandle Handle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
 	ActiveBurnHandle = Handle;

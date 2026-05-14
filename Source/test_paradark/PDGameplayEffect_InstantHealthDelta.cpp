@@ -11,6 +11,8 @@ UPDGameplayEffect_InstantHealthDelta::UPDGameplayEffect_InstantHealthDelta()
 	FGameplayModifierInfo Mod;
 	Mod.Attribute = UPDAttributeSet::GetHealthAttribute();
 	Mod.ModifierOp = EGameplayModOp::Additive;
-	Mod.ModifierMagnitude = FGameplayEffectModifierMagnitude(FGameplayEffectMagnitudeSetByCaller(TAG_PD_Data_HealthDelta));
+	FSetByCallerFloat SBC;
+	SBC.DataTag = TAG_PD_Data_HealthDelta;
+	Mod.ModifierMagnitude = FGameplayEffectModifierMagnitude(SBC);
 	Modifiers.Add(Mod);
 }

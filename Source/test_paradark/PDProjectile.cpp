@@ -126,14 +126,16 @@ void APDProjectile::OnProjectileHit(
 	{
 	case EPDProjectileAmmoType::Regular:
 	{
-		const TSubclassOf<UDamageType> DT = RegularDamageType ? RegularDamageType : UDamageType::StaticClass();
+		TSubclassOf<UDamageType> DT = RegularDamageType;
+		if (!DT) { DT = UDamageType::StaticClass(); }
 		UGameplayStatics::ApplyPointDamage(OtherActor, RegularDamage, GetVelocity().GetSafeNormal(), Hit, InstigatorController, this, DT);
 		UE_LOG(LogTemp, Log, TEXT("[PDProjectile] Applied Regular damage=%.2f to %s (fallback)"), RegularDamage, *GetNameSafe(OtherActor));
 		break;
 	}
 	case EPDProjectileAmmoType::Fire:
 	{
-		const TSubclassOf<UDamageType> DT = FireDamageType ? FireDamageType : UDamageType::StaticClass();
+		TSubclassOf<UDamageType> DT = FireDamageType;
+		if (!DT) { DT = UDamageType::StaticClass(); }
 		UGameplayStatics::ApplyPointDamage(OtherActor, FireImpactDamage, GetVelocity().GetSafeNormal(), Hit, InstigatorController, this, DT);
 		UE_LOG(LogTemp, Log, TEXT("[PDProjectile] Applied Fire impact damage=%.2f to %s (fallback). Burn requires interface/component on target."),
 			FireImpactDamage, *GetNameSafe(OtherActor));
@@ -141,7 +143,8 @@ void APDProjectile::OnProjectileHit(
 	}
 	case EPDProjectileAmmoType::Water:
 	{
-		const TSubclassOf<UDamageType> DT = WaterDamageType ? WaterDamageType : UDamageType::StaticClass();
+		TSubclassOf<UDamageType> DT = WaterDamageType;
+		if (!DT) { DT = UDamageType::StaticClass(); }
 		UGameplayStatics::ApplyPointDamage(OtherActor, 0.0f, GetVelocity().GetSafeNormal(), Hit, InstigatorController, this, DT);
 		UE_LOG(LogTemp, Log, TEXT("[PDProjectile] Water hit %s (fallback). Extinguish requires interface/component on target."), *GetNameSafe(OtherActor));
 		break;

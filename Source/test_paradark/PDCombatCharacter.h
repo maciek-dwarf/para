@@ -20,13 +20,25 @@ class TEST_PARADARK_API APDCombatCharacter : public ACharacter, public IAbilityS
 public:
 	APDCombatCharacter();
 
-	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystemComponent; }
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 	UFUNCTION(BlueprintCallable, Category = "PD|GAS")
 	UPDAbilitySystemComponent* GetPDAbilitySystemComponent() const { return AbilitySystemComponent; }
 
 	UFUNCTION(BlueprintCallable, Category = "PD|GAS")
 	const UPDAttributeSet* GetPDAttributeSet() const { return AttributeSet; }
+
+	/** Current health value (clamped >= 0). Safe to call from Blueprints. */
+	UFUNCTION(BlueprintPure, Category = "PD|GAS")
+	float GetHealthCurrent() const;
+
+	/** Maximum health value. */
+	UFUNCTION(BlueprintPure, Category = "PD|GAS")
+	float GetHealthMax() const;
+
+	/** Health / MaxHealth (0..1). Returns 0 when MaxHealth <= 0. */
+	UFUNCTION(BlueprintPure, Category = "PD|GAS")
+	float GetHealthNormalized() const;
 
 	/** Single entry point for typed damage/heal; applies resistances for non-heal types. */
 	UFUNCTION(BlueprintCallable, Category = "PD|Damage")
